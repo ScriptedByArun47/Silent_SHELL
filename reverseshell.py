@@ -129,6 +129,8 @@ def connect_back():
                     help_message = """
 [+] Available Commands:
   - help                  : Show this help menu
+   - cmd                  : Switch to CMD mode
+  - powershell           : Switch to PowerShell mode
   - persistence_status    : Check if persistence was added
   - admin_status         : Check if running with admin privileges
   - amsi_status           : Check if AMSI Bypass was successful

@@ -16,3 +16,19 @@
 - 🧠 **Unique Filenames**: Stores incoming files without overwrite conflicts.
 
 ---
+
+
+# 🎧 Reverse Shell Listener
+
+> A lightweight TCP server to receive data and files from reverse shell clients.
+
+---
+
+## 🚀 Features
+
+- ✅ Listens on configurable HOST and PORT
+- 📥 Receives and saves incoming data from clients
+- 📤 Can send files to connected clients
+- 🗃️ Auto-saves data with timestamped filenames
+
+---
